@@ -2,20 +2,31 @@
 <html>
 <head>
     <title>Dynamic Wallpaper</title>
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+    <style>
+        canvas { border: 1px solid black; }
+        #output { display: block; }
+    </style>
 </head>
 <body>
     <div id="output"></div>
     <script type="text/javascript">
         async function main() {
-            let pyodide = await loadPyodide();
-            await pyodide.loadPackage("micropip");
-            await pyodide.runPythonAsync(`
-                import micropip
-                await micropip.install('pygame')
-            `);
-            const code = await fetch("WallFaper.py").then(res => res.text());
-            await pyodide.runPythonAsync(code);
+            try {
+                let pyodide = await loadPyodide({ indexURL: "https://cdn.jsdelivr.net/pyodide/v0.26.2/full/" });
+                await pyodide.loadPackage("micropip");
+                await pyodide.runPythonAsync(`
+                    import micropip
+                    await micropip.install('pygame==2.5.2')
+                `);
+                const response = await fetch("/wallpaper_app_enhanced.py");
+                if (!response.ok) throw new Error("Failed to load Python script");
+                const code = await response.text();
+                await pyodide.runPythonAsync(code);
+            } catch (error) {
+                console.error("Error:", error);
+                document.getElementById("output").innerText = "Error loading wallpaper app: " + error.message;
+            }
         }
         main();
     </script>
